@@ -32,6 +32,9 @@ class CardView(tk.Label):
             )
 
 class BridgeGameWindow(tk.Tk):
+    CARD_RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+    CARD_SUITS = ['♠', '♥', '♦', '♣']
+
     def __init__(self):
         super().__init__()
 
@@ -136,7 +139,13 @@ class BridgeGameWindow(tk.Tk):
         ]
         
         # Sort the hand by suit and rank
-        sample_south_hand.sort(key=lambda card: ('♠♥♦♣'.index(card[0]), '23456789TJQKA'.index(card[1])))
+        def card_sort_key(card):
+            suit, rank = card
+            suit_index = self.CARD_SUITS.index(suit)
+            rank_index = self.CARD_RANKS.index(rank)
+            return (suit_index, rank_index)
+        
+        sample_south_hand.sort(key=card_sort_key)
         
         for suit, rank in sample_south_hand:
             card = CardView(south_cards_frame, suit, rank, face_up=True)
