@@ -6,29 +6,34 @@ class CardView(tk.Label):
     SUITS = {'♠': 'black', '♥': 'red', '♦': 'red', '♣': 'black'}
     
     def __init__(self, parent, suit, rank, face_up=True):
+        # Calculate width based on rank
+        width = 4 if rank == '10' else 3
+        
         if face_up:
             super().__init__(
                 parent,
                 text=f"{rank}{suit}",
-                font=('Arial', 12),
+                font=('Arial', 14),  # Increased font size
                 fg=self.SUITS[suit],
                 bg='white',
-                width=3,
+                width=width,
                 relief=tk.RAISED,
-                padx=3,
-                pady=3
+                padx=2,
+                pady=2,
+                borderwidth=2
             )
         else:
             super().__init__(
                 parent,
                 text="🂠",  # Card back symbol
-                font=('Arial', 12),
+                font=('Arial', 14),
                 fg='navy',
                 bg='lightblue',
                 width=3,
                 relief=tk.RAISED,
-                padx=3,
-                pady=3
+                padx=2,
+                pady=2,
+                borderwidth=2
             )
 
 class BridgeGameWindow(tk.Tk):
@@ -45,8 +50,8 @@ class BridgeGameWindow(tk.Tk):
         # Get screen dimensions and set window size
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
-        window_width = 1200
-        window_height = 800
+        window_width = 1400  # Increased width
+        window_height = 900  # Increased height
         
         # Center the window
         x = (screen_width - window_width) // 2
@@ -78,13 +83,13 @@ class BridgeGameWindow(tk.Tk):
         self.main_frame.pack(expand=True, fill='both', padx=20, pady=20)
 
         # Create frames for each player with better styling
-        self.north_frame = tk.Frame(self.main_frame, bg='#004400', height=150, width=600)
-        self.south_frame = tk.Frame(self.main_frame, bg='#004400', height=150, width=600)
-        self.east_frame = tk.Frame(self.main_frame, bg='#004400', height=400, width=150)
-        self.west_frame = tk.Frame(self.main_frame, bg='#004400', height=400, width=150)
+        self.north_frame = tk.Frame(self.main_frame, bg='#004400', height=180, width=700)  # Increased sizes
+        self.south_frame = tk.Frame(self.main_frame, bg='#004400', height=180, width=700)
+        self.east_frame = tk.Frame(self.main_frame, bg='#004400', height=500, width=180)
+        self.west_frame = tk.Frame(self.main_frame, bg='#004400', height=500, width=180)
         
         # Create central playing area
-        self.center_frame = tk.Frame(self.main_frame, bg='darkgreen', height=300, width=300)
+        self.center_frame = tk.Frame(self.main_frame, bg='darkgreen', height=400, width=400)
         
         # Place frames using place geometry manager
         self.north_frame.place(relx=0.5, rely=0, anchor='n')
@@ -99,7 +104,7 @@ class BridgeGameWindow(tk.Tk):
             frame.pack_propagate(False)
 
         # Add labels for player positions with better styling
-        style = {'bg': '#004400', 'fg': 'white', 'font': ('Arial', 12, 'bold')}
+        style = {'bg': '#004400', 'fg': 'white', 'font': ('Arial', 14, 'bold')}  # Increased font size
         tk.Label(self.north_frame, text="North", **style).pack(pady=5)
         tk.Label(self.south_frame, text="South (You)", **style).pack(pady=5)
         tk.Label(self.east_frame, text="East", **style).pack(pady=5)
@@ -109,20 +114,21 @@ class BridgeGameWindow(tk.Tk):
         self.trick_label = tk.Label(self.center_frame, 
                                   text="Tricks: NS: 0 | EW: 0",
                                   bg='darkgreen', fg='white',
-                                  font=('Arial', 12))
+                                  font=('Arial', 14))  # Increased font size
         self.trick_label.pack(pady=10)
         
         self.contract_label = tk.Label(self.center_frame,
                                      text="Contract: Not set",
                                      bg='darkgreen', fg='white',
-                                     font=('Arial', 12))
+                                     font=('Arial', 14))  # Increased font size
         self.contract_label.pack(pady=10)
 
     def _create_status_bar(self):
         self.status_bar = ttk.Label(
             self,
             text="Welcome to Bridge Game! Click 'Game > New Game' to start.",
-            relief=tk.SUNKEN
+            relief=tk.SUNKEN,
+            font=('Arial', 12)  # Added font size
         )
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
@@ -143,11 +149,19 @@ class BridgeGameWindow(tk.Tk):
             suit, rank = card
             suit_index = self.CARD_SUITS.index(suit)
             rank_index = self.CARD_RANKS.index(rank)
-            return (suit_index, rank_index)
+            return (suit_index, -rank_index)  # Negative rank_index to sort high to low
         
         sample_south_hand.sort(key=card_sort_key)
         
+        # Group cards by suit for better spacing
+        current_suit = None
         for suit, rank in sample_south_hand:
+            if current_suit is not None and suit != current_suit:
+                # Add a bit more space between suits
+                spacer = tk.Label(south_cards_frame, text=" ", bg='#004400', width=1)
+                spacer.pack(side=tk.LEFT)
+            current_suit = suit
+            
             card = CardView(south_cards_frame, suit, rank, face_up=True)
             card.pack(side=tk.LEFT, padx=1)
 
@@ -159,12 +173,16 @@ class BridgeGameWindow(tk.Tk):
             cards_frame.pack(pady=30)
             
             # Create 13 face-down cards for each other player
-            for _ in range(13):
+            for i in range(13):
                 card = CardView(cards_frame, '♠', 'A', face_up=False)
                 if position in ['left', 'right']:
                     card.pack(pady=1)  # Stack vertically for East/West
                 else:
                     card.pack(side=tk.LEFT, padx=1)  # Stack horizontally for North
+                    # Add slight spacing every 4 cards for North
+                    if i in [3, 7, 11]:
+                        spacer = tk.Label(cards_frame, text=" ", bg='#004400', width=1)
+                        spacer.pack(side=tk.LEFT)
 
     def _new_game(self):
         messagebox.showinfo("New Game", "Starting new game...")
