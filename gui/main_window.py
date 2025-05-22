@@ -1,132 +1,137 @@
-"""
-Main Window Module for Bridge Game GUI
-
-This module defines the main window for the Bridge card game GUI.
-"""
-
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk
+from tkinter import messagebox
 
-
-class MainWindow:
-    """Main window class for the Bridge game interface."""
+class CardView(tk.Label):
+    SUITS = {'♠': 'black', '♥': 'red', '♦': 'red', '♣': 'black'}
     
-    def __init__(self, master, game):
-        """
-        Initialize the main window.
+    def __init__(self, parent, suit, rank):
+        super().__init__(
+            parent,
+            text=f"{rank}{suit}",
+            font=('Arial', 14),
+            fg=self.SUITS[suit],
+            bg='white',
+            width=4,
+            relief=tk.RAISED,
+            padx=5,
+            pady=5
+        )
+
+class BridgeGameWindow(tk.Tk):
+    def __init__(self):
+        super().__init__()
+
+        # Configure the main window
+        self.title("Bridge Game")
+        self.configure(bg='darkgreen')
         
-        Args:
-            master: The Tkinter root window
-            game: The BridgeGame instance
-        """
-        self.master = master
-        self.game = game
+        # Get screen dimensions and set window size
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        window_width = 1200
+        window_height = 800
         
-        # Configure the root window
-        self.master.geometry("800x600")
-        self.master.minsize(800, 600)
+        # Center the window
+        x = (screen_width - window_width) // 2
+        y = (screen_height - window_height) // 2
+        self.geometry(f'{window_width}x{window_height}+{x}+{y}')
+
+        self._create_menu()
+        self._create_layout()
+        self._create_status_bar()
         
+        # Add some sample cards for visualization
+        self._add_sample_cards()
+
+    def _create_menu(self):
+        menubar = tk.Menu(self)
+        self.config(menu=menubar)
+
+        game_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Game", menu=game_menu)
+        game_menu.add_command(label="New Game", command=self._new_game)
+        game_menu.add_command(label="Save Game", command=self._save_game)
+        game_menu.add_command(label="Load Game", command=self._load_game)
+        game_menu.add_separator()
+        game_menu.add_command(label="Exit", command=self.quit)
+
+    def _create_layout(self):
         # Create main frame
-        self.main_frame = ttk.Frame(self.master, padding="10")
-        self.main_frame.pack(fill=tk.BOTH, expand=True)
-        
-        # Set up the menu bar
-        self.setup_menu()
-        
-        # Create the game board
-        self.setup_game_board()
-        
-        # Set up status bar
-        self.setup_status_bar()
-    
-    def setup_menu(self):
-        """Create the menu bar."""
-        menubar = tk.Menu(self.master)
-        
-        # File menu
-        filemenu = tk.Menu(menubar, tearoff=0)
-        filemenu.add_command(label="New Game", command=self.new_game)
-        filemenu.add_command(label="Save Game", command=self.save_game)
-        filemenu.add_command(label="Load Game", command=self.load_game)
-        filemenu.add_separator()
-        filemenu.add_command(label="Exit", command=self.master.quit)
-        
-        # Help menu
-        helpmenu = tk.Menu(menubar, tearoff=0)
-        helpmenu.add_command(label="Rules", command=self.show_rules)
-        helpmenu.add_command(label="About", command=self.show_about)
-        
-        # Add menus to menubar
-        menubar.add_cascade(label="File", menu=filemenu)
-        menubar.add_cascade(label="Help", menu=helpmenu)
-        
-        # Display the menubar
-        self.master.config(menu=menubar)
-    
-    def setup_game_board(self):
-        """Create the game board area."""
-        # Main game area frame
-        self.game_frame = ttk.Frame(self.main_frame, borderwidth=2, relief="groove")
-        self.game_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
-        # Placeholder for the card table
-        self.table_canvas = tk.Canvas(self.game_frame, bg="green")
-        self.table_canvas.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        # Player's hand frame
-        self.hand_frame = ttk.Frame(self.main_frame)
-        self.hand_frame.pack(fill=tk.X, padx=5, pady=5)
-        
-        # Placeholder text
-        self.table_canvas.create_text(
-            400, 300, 
-            text="Bridge Game Table - Cards will be displayed here", 
-            fill="white", font=("Arial", 14)
-        )
-    
-    def setup_status_bar(self):
-        """Create the status bar."""
-        self.status_bar = ttk.Frame(self.master)
-        self.status_bar.pack(fill=tk.X, side=tk.BOTTOM)
-        
-        self.status_label = ttk.Label(
-            self.status_bar, 
-            text="Welcome to Bridge Card Game", 
-            anchor=tk.W
-        )
-        self.status_label.pack(fill=tk.X, padx=5, pady=2)
-    
-    def update_status(self, message):
-        """Update the status bar message."""
-        self.status_label.config(text=message)
-    
-    def new_game(self):
-        """Start a new game."""
-        self.game.new_game()
-        self.update_status("New game started")
-    
-    def save_game(self):
-        """Save the current game state."""
-        self.update_status("Game saved")
-        messagebox.showinfo("Save Game", "Game state saved successfully!")
-    
-    def load_game(self):
-        """Load a saved game state."""
-        self.update_status("Game loaded")
-        messagebox.showinfo("Load Game", "Game state loaded successfully!")
-    
-    def show_rules(self):
-        """Display the rules of Bridge."""
-        messagebox.showinfo(
-            "Bridge Rules",
-            "Bridge is a trick-taking card game using a standard deck of 52 playing cards.\n\n"
-            "The game is played by four players in two competing partnerships."
-        )
-    
-    def show_about(self):
-        """Display information about the application."""
-        messagebox.showinfo(
-            "About Bridge Game",
-            "Bridge Card Game\nVersion 1.0\n\nA simple implementation of the Bridge card game."
-        )
+        self.main_frame = tk.Frame(self, bg='darkgreen')
+        self.main_frame.pack(expand=True, fill='both', padx=20, pady=20)
 
+        # Create frames for each player with better styling
+        self.north_frame = tk.Frame(self.main_frame, bg='#004400', height=150, width=500)
+        self.south_frame = tk.Frame(self.main_frame, bg='#004400', height=150, width=500)
+        self.east_frame = tk.Frame(self.main_frame, bg='#004400', height=400, width=150)
+        self.west_frame = tk.Frame(self.main_frame, bg='#004400', height=400, width=150)
+        
+        # Create central playing area
+        self.center_frame = tk.Frame(self.main_frame, bg='darkgreen', height=300, width=300)
+        
+        # Place frames using place geometry manager
+        self.north_frame.place(relx=0.5, rely=0, anchor='n')
+        self.south_frame.place(relx=0.5, rely=1, anchor='s')
+        self.east_frame.place(relx=1, rely=0.5, anchor='e')
+        self.west_frame.place(relx=0, rely=0.5, anchor='w')
+        self.center_frame.place(relx=0.5, rely=0.5, anchor='center')
+
+        # Prevent frames from shrinking
+        for frame in [self.north_frame, self.south_frame, self.east_frame, 
+                     self.west_frame, self.center_frame]:
+            frame.pack_propagate(False)
+
+        # Add labels for player positions with better styling
+        style = {'bg': '#004400', 'fg': 'white', 'font': ('Arial', 12, 'bold')}
+        tk.Label(self.north_frame, text="North", **style).pack(pady=5)
+        tk.Label(self.south_frame, text="South", **style).pack(pady=5)
+        tk.Label(self.east_frame, text="East", **style).pack(pady=5)
+        tk.Label(self.west_frame, text="West", **style).pack(pady=5)
+        
+        # Add trick counter and contract display in center
+        self.trick_label = tk.Label(self.center_frame, 
+                                  text="Tricks: NS: 0 | EW: 0",
+                                  bg='darkgreen', fg='white',
+                                  font=('Arial', 12))
+        self.trick_label.pack(pady=10)
+        
+        self.contract_label = tk.Label(self.center_frame,
+                                     text="Contract: Not set",
+                                     bg='darkgreen', fg='white',
+                                     font=('Arial', 12))
+        self.contract_label.pack(pady=10)
+
+    def _create_status_bar(self):
+        self.status_bar = ttk.Label(
+            self,
+            text="Welcome to Bridge Game! Click 'Game > New Game' to start.",
+            relief=tk.SUNKEN
+        )
+        self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
+
+    def _add_sample_cards(self):
+        # Add some sample cards to South position
+        south_cards_frame = tk.Frame(self.south_frame, bg='#004400')
+        south_cards_frame.pack(pady=30)
+        
+        sample_cards = [
+            ('♠', 'A'), ('♥', 'K'), ('♦', 'Q'), ('♣', 'J'),
+            ('♠', '10'), ('♥', '9'), ('♦', '8'), ('♣', '7')
+        ]
+        
+        for suit, rank in sample_cards:
+            card = CardView(south_cards_frame, suit, rank)
+            card.pack(side=tk.LEFT, padx=2)
+
+    def _new_game(self):
+        messagebox.showinfo("New Game", "Starting new game...")
+        self.status_bar.config(text="New game started")
+
+    def _save_game(self):
+        messagebox.showinfo("Save Game", "Game saving not implemented yet")
+        self.status_bar.config(text="Game saved")
+
+    def _load_game(self):
+        messagebox.showinfo("Load Game", "Game loading not implemented yet")
+        self.status_bar.config(text="Game loaded")
