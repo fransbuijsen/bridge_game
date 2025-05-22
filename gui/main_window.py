@@ -5,18 +5,31 @@ from tkinter import messagebox
 class CardView(tk.Label):
     SUITS = {'♠': 'black', '♥': 'red', '♦': 'red', '♣': 'black'}
     
-    def __init__(self, parent, suit, rank):
-        super().__init__(
-            parent,
-            text=f"{rank}{suit}",
-            font=('Arial', 14),
-            fg=self.SUITS[suit],
-            bg='white',
-            width=4,
-            relief=tk.RAISED,
-            padx=5,
-            pady=5
-        )
+    def __init__(self, parent, suit, rank, face_up=True):
+        if face_up:
+            super().__init__(
+                parent,
+                text=f"{rank}{suit}",
+                font=('Arial', 12),
+                fg=self.SUITS[suit],
+                bg='white',
+                width=3,
+                relief=tk.RAISED,
+                padx=3,
+                pady=3
+            )
+        else:
+            super().__init__(
+                parent,
+                text="🂠",  # Card back symbol
+                font=('Arial', 12),
+                fg='navy',
+                bg='lightblue',
+                width=3,
+                relief=tk.RAISED,
+                padx=3,
+                pady=3
+            )
 
 class BridgeGameWindow(tk.Tk):
     def __init__(self):
@@ -41,8 +54,8 @@ class BridgeGameWindow(tk.Tk):
         self._create_layout()
         self._create_status_bar()
         
-        # Add some sample cards for visualization
-        self._add_sample_cards()
+        # Add sample hands
+        self._add_sample_hands()
 
     def _create_menu(self):
         menubar = tk.Menu(self)
@@ -62,8 +75,8 @@ class BridgeGameWindow(tk.Tk):
         self.main_frame.pack(expand=True, fill='both', padx=20, pady=20)
 
         # Create frames for each player with better styling
-        self.north_frame = tk.Frame(self.main_frame, bg='#004400', height=150, width=500)
-        self.south_frame = tk.Frame(self.main_frame, bg='#004400', height=150, width=500)
+        self.north_frame = tk.Frame(self.main_frame, bg='#004400', height=150, width=600)
+        self.south_frame = tk.Frame(self.main_frame, bg='#004400', height=150, width=600)
         self.east_frame = tk.Frame(self.main_frame, bg='#004400', height=400, width=150)
         self.west_frame = tk.Frame(self.main_frame, bg='#004400', height=400, width=150)
         
@@ -85,7 +98,7 @@ class BridgeGameWindow(tk.Tk):
         # Add labels for player positions with better styling
         style = {'bg': '#004400', 'fg': 'white', 'font': ('Arial', 12, 'bold')}
         tk.Label(self.north_frame, text="North", **style).pack(pady=5)
-        tk.Label(self.south_frame, text="South", **style).pack(pady=5)
+        tk.Label(self.south_frame, text="South (You)", **style).pack(pady=5)
         tk.Label(self.east_frame, text="East", **style).pack(pady=5)
         tk.Label(self.west_frame, text="West", **style).pack(pady=5)
         
@@ -110,19 +123,39 @@ class BridgeGameWindow(tk.Tk):
         )
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
-    def _add_sample_cards(self):
-        # Add some sample cards to South position
+    def _add_sample_hands(self):
+        # Sample complete hand for South (visible cards)
         south_cards_frame = tk.Frame(self.south_frame, bg='#004400')
         south_cards_frame.pack(pady=30)
         
-        sample_cards = [
-            ('♠', 'A'), ('♥', 'K'), ('♦', 'Q'), ('♣', 'J'),
-            ('♠', '10'), ('♥', '9'), ('♦', '8'), ('♣', '7')
+        sample_south_hand = [
+            ('♠', 'A'), ('♠', 'K'), ('♠', '10'), ('♠', '2'),
+            ('♥', 'Q'), ('♥', 'J'), ('♥', '9'),
+            ('♦', 'K'), ('♦', '8'), ('♦', '7'),
+            ('♣', 'A'), ('♣', '10'), ('♣', '5')
         ]
         
-        for suit, rank in sample_cards:
-            card = CardView(south_cards_frame, suit, rank)
-            card.pack(side=tk.LEFT, padx=2)
+        # Sort the hand by suit and rank
+        sample_south_hand.sort(key=lambda card: ('♠♥♦♣'.index(card[0]), '23456789TJQKA'.index(card[1])))
+        
+        for suit, rank in sample_south_hand:
+            card = CardView(south_cards_frame, suit, rank, face_up=True)
+            card.pack(side=tk.LEFT, padx=1)
+
+        # Add face-down cards for other players
+        for frame, position in [(self.north_frame, 'top'), 
+                              (self.east_frame, 'right'), 
+                              (self.west_frame, 'left')]:
+            cards_frame = tk.Frame(frame, bg='#004400')
+            cards_frame.pack(pady=30)
+            
+            # Create 13 face-down cards for each other player
+            for _ in range(13):
+                card = CardView(cards_frame, '♠', 'A', face_up=False)
+                if position in ['left', 'right']:
+                    card.pack(pady=1)  # Stack vertically for East/West
+                else:
+                    card.pack(side=tk.LEFT, padx=1)  # Stack horizontally for North
 
     def _new_game(self):
         messagebox.showinfo("New Game", "Starting new game...")
