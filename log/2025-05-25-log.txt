@@ -1,0 +1,76 @@
+2025-05-25 00:06:23,659 - BridgeGame - INFO - Starting Bridge Game application
+2025-05-25 00:06:23,796 - BridgeGame.GUI - INFO - Screen dimensions: 2560x1440
+2025-05-25 00:06:23,796 - BridgeGame.GUI - INFO - Window dimensions: 1400x900
+2025-05-25 00:06:23,797 - BridgeGame.GUI - INFO - Window position: +580+270
+2025-05-25 00:06:23,880 - BridgeGame - INFO - GUI initialized successfully
+2025-05-25 00:06:23,981 - BridgeGame.GUI - INFO - Performing final visibility check
+2025-05-25 00:06:23,981 - BridgeGame.GUI - INFO - Actual window geometry: 1400x900+580+270
+2025-05-25 00:06:23,981 - BridgeGame.GUI - INFO - Window is confirmed viewable
+2025-05-25 00:06:29,621 - BridgeGame.GUI - INFO - Card click: South attempting to play Ace of Spades
+2025-05-25 00:06:29,622 - BridgeGame.Core - INFO - Player South played Ace of Spades
+2025-05-25 00:06:29,622 - BridgeGame.Core - INFO - Next player: West
+2025-05-25 00:06:29,622 - BridgeGame.GUI - INFO - Card played: South played Ace of Spades
+2025-05-25 00:06:29,630 - BridgeGame.GUI - INFO - Setting next player to: 1 (West)
+2025-05-25 00:06:29,630 - BridgeGame.GUI - INFO - Next player: West
+2025-05-25 00:06:33,102 - BridgeGame.GUI - INFO - Card click: West attempting to play King of Spades
+2025-05-25 00:06:33,102 - BridgeGame.GUI - INFO - Current trick led with S
+2025-05-25 00:06:33,102 - BridgeGame.GUI - INFO - West has S cards and must follow suit
+2025-05-25 00:06:33,102 - BridgeGame.Core - INFO - Player West played King of Spades
+2025-05-25 00:06:33,102 - BridgeGame.Core - INFO - Next player: North
+2025-05-25 00:06:33,102 - BridgeGame.GUI - INFO - Card played: West played King of Spades
+2025-05-25 00:06:33,111 - BridgeGame.GUI - INFO - Setting next player to: 2 (North)
+2025-05-25 00:06:33,111 - BridgeGame.GUI - INFO - Next player: North
+2025-05-25 00:06:36,372 - BridgeGame.GUI - INFO - Card click: North attempting to play 4 of Spades
+2025-05-25 00:06:36,372 - BridgeGame.GUI - INFO - Current trick led with S
+2025-05-25 00:06:36,372 - BridgeGame.GUI - INFO - North has S cards and must follow suit
+2025-05-25 00:06:36,372 - BridgeGame.Core - INFO - Player North played 4 of Spades
+2025-05-25 00:06:36,372 - BridgeGame.Core - INFO - Next player: East
+2025-05-25 00:06:36,372 - BridgeGame.GUI - INFO - Card played: North played 4 of Spades
+2025-05-25 00:06:36,381 - BridgeGame.GUI - INFO - Setting next player to: 3 (East)
+2025-05-25 00:06:36,381 - BridgeGame.GUI - INFO - Next player: East
+2025-05-25 00:06:40,168 - BridgeGame.GUI - INFO - Card click: East attempting to play Jack of Spades
+2025-05-25 00:06:40,168 - BridgeGame.GUI - INFO - Current trick led with S
+2025-05-25 00:06:40,168 - BridgeGame.GUI - INFO - East has S cards and must follow suit
+2025-05-25 00:06:40,168 - BridgeGame.Core - INFO - Player East played Jack of Spades
+2025-05-25 00:06:40,168 - BridgeGame.Core - INFO - Trick complete: [(0, 0, Card('S', 14)), (1, 1, Card('S', 13)), (2, 2, Card('S', 4)), (3, 3, Card('S', 11))]
+2025-05-25 00:06:40,168 - BridgeGame.Core - INFO - Trick to evaluate: Player 0: Ace of Spades, Player 1: King of Spades, Player 2: 4 of Spades, Player 3: Jack of Spades
+2025-05-25 00:06:40,169 - BridgeGame.Core - INFO - Led suit: S
+2025-05-25 00:06:40,169 - BridgeGame.Core - INFO - Evaluating card 1/4: Ace of Spades from player 0
+2025-05-25 00:06:40,169 - BridgeGame.Core - INFO - Card is led suit (S)
+2025-05-25 00:06:40,169 - BridgeGame.Core - INFO - New highest card: Ace of Spades from player 0 (value=14)
+2025-05-25 00:06:40,169 - BridgeGame.Core - INFO - Evaluating card 2/4: King of Spades from player 1
+2025-05-25 00:06:40,169 - BridgeGame.Core - INFO - Card is led suit (S)
+2025-05-25 00:06:40,169 - BridgeGame.Core - INFO - Evaluating card 3/4: 4 of Spades from player 2
+2025-05-25 00:06:40,169 - BridgeGame.Core - INFO - Card is led suit (S)
+2025-05-25 00:06:40,169 - BridgeGame.Core - INFO - Evaluating card 4/4: Jack of Spades from player 3
+2025-05-25 00:06:40,169 - BridgeGame.Core - INFO - Card is led suit (S)
+2025-05-25 00:06:40,169 - BridgeGame.Core - INFO - Winner: Player 0 with highest S card: Ace of Spades (value=14)
+2025-05-25 00:06:40,169 - BridgeGame.Core - INFO - Trick winner: Player South with Ace of Spades
+2025-05-25 00:06:40,169 - BridgeGame.Core - INFO - Next lead: Player South (trick winner) - current_player and last_trick_winner set to 0
+2025-05-25 00:06:40,169 - BridgeGame.GUI - INFO - Card played: East played Jack of Spades
+2025-05-25 00:06:40,177 - BridgeGame.GUI - INFO - Setting next player to: 0 (South)
+2025-05-25 00:06:40,178 - BridgeGame.GUI - INFO - Next player: South
+2025-05-25 00:06:47,951 - BridgeGame.GUI - INFO - Card click: South attempting to play King of Hearts
+2025-05-25 00:06:47,952 - BridgeGame.GUI - INFO - Correct player leading: South (trick winner)
+2025-05-25 00:06:47,952 - BridgeGame.Core - INFO - Player South played King of Hearts
+2025-05-25 00:06:47,952 - BridgeGame.Core - INFO - Next player: West
+2025-05-25 00:06:47,952 - BridgeGame.GUI - INFO - Card played: South played King of Hearts
+2025-05-25 00:06:47,960 - BridgeGame.GUI - INFO - Setting next player to: 1 (West)
+2025-05-25 00:06:47,960 - BridgeGame.GUI - INFO - Next player: West
+2025-05-25 00:06:50,365 - BridgeGame.GUI - INFO - Card click: West attempting to play 9 of Hearts
+2025-05-25 00:06:50,366 - BridgeGame.GUI - INFO - Current trick led with H
+2025-05-25 00:06:50,366 - BridgeGame.GUI - INFO - West has H cards and must follow suit
+2025-05-25 00:06:50,366 - BridgeGame.Core - INFO - Player West played 9 of Hearts
+2025-05-25 00:06:50,366 - BridgeGame.Core - INFO - Next player: North
+2025-05-25 00:06:50,366 - BridgeGame.GUI - INFO - Card played: West played 9 of Hearts
+2025-05-25 00:06:50,373 - BridgeGame.GUI - INFO - Setting next player to: 2 (North)
+2025-05-25 00:06:50,373 - BridgeGame.GUI - INFO - Next player: North
+2025-05-25 00:06:52,481 - BridgeGame.GUI - INFO - Card click: North attempting to play 2 of Hearts
+2025-05-25 00:06:52,481 - BridgeGame.GUI - INFO - Current trick led with H
+2025-05-25 00:06:52,481 - BridgeGame.GUI - INFO - North has H cards and must follow suit
+2025-05-25 00:06:52,481 - BridgeGame.Core - INFO - Player North played 2 of Hearts
+2025-05-25 00:06:52,481 - BridgeGame.Core - INFO - Next player: East
+2025-05-25 00:06:52,481 - BridgeGame.GUI - INFO - Card played: North played 2 of Hearts
+2025-05-25 00:06:52,489 - BridgeGame.GUI - INFO - Setting next player to: 3 (East)
+2025-05-25 00:06:52,490 - BridgeGame.GUI - INFO - Next player: East
+2025-05-25 00:07:00,797 - BridgeGame - INFO - Application closed normally
