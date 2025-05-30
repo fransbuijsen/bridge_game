@@ -1,50 +1,103 @@
 """
-Deck Module for Bridge Card Game
+Deck module for Bridge card game.
 
-This module defines the Card and Deck classes for the Bridge card game.
+This module defines the Card and Deck classes for a standard 52-card deck.
 """
 
 import random
-import collections
+import logging
+from typing import List, Optional
+
+# Set up logger
+logger = logging.getLogger("BridgeGame.Core.Deck")
 
 class Card:
-    """Representation of a playing card."""
+    """
+    Card class representing a playing card.
     
-    # Class constants for suits and values
-    SUITS = {"S": "Spades", "H": "Hearts", "D": "Diamonds", "C": "Clubs"}
-    SUIT_ORDER = {"S": 4, "H": 3, "D": 2, "C": 1}  # For comparison
+    Attributes:
+        suit: The suit of the card (S, H, D, C)
+        value: The value of the card (2-14, where 14 is Ace)
+    """
     
+    # Constants for card values
+    ACE = 14
+    KING = 13
+    QUEEN = 12
+    JACK = 11
+    
+    # Map of value to name
     VALUE_NAMES = {
-        2: "2", 3: "3", 4: "4", 5: "5", 6: "6", 7: "7", 8: "8", 9: "9", 10: "10",
-        11: "Jack", 12: "Queen", 13: "King", 14: "Ace"
+        14: 'A',
+        13: 'K',
+        12: 'Q',
+        11: 'J',
+        10: '10',
+        9: '9',
+        8: '8',
+        7: '7',
+        6: '6',
+        5: '5',
+        4: '4',
+        3: '3',
+        2: '2'
     }
     
-    def __init__(self, suit, value):
+    # Map of suit to symbol
+    SUIT_SYMBOLS = {
+        'S': '♠',
+        'H': '♥',
+        'D': '♦',
+        'C': '♣'
+    }
+    
+    # Class constants for suit ordering
+    SUIT_ORDER = {"S": 4, "H": 3, "D": 2, "C": 1}  # For comparison
+    
+    def __init__(self, suit: str, value: int):
         """
-        Initialize a card with suit and value.
+        Initialize a card.
         
         Args:
-            suit (str): Single character suit code ('S', 'H', 'D', 'C')
-            value (int): Card value (2-14, where 14 is Ace)
+            suit: The suit of the card (S, H, D, C)
+            value: The value of the card (2-14, where 14 is Ace)
         """
-        if suit not in self.SUITS:
+        if suit not in self.SUIT_SYMBOLS:
             raise ValueError(f"Invalid suit: {suit}")
         if value not in self.VALUE_NAMES:
             raise ValueError(f"Invalid value: {value}")
             
         self.suit = suit
         self.value = value
+        
+    @property
+    def value_name(self) -> str:
+        """Get the string representation of the card's value."""
+        return self.VALUE_NAMES.get(self.value, str(self.value))
     
-    def __str__(self):
-        """Return string representation of card."""
-        return f"{self.VALUE_NAMES[self.value]} of {self.SUITS[self.suit]}"
+    @property
+    def suit_symbol(self) -> str:
+        """Get the symbol for the card's suit."""
+        return self.SUIT_SYMBOLS.get(self.suit, self.suit)
     
-    def __repr__(self):
-        """Return representation of card."""
+    def __str__(self) -> str:
+        """String representation of the card."""
+        return f"{self.value_name}{self.suit_symbol}"
+    
+    def __repr__(self) -> str:
+        """Representation of the card."""
         return f"Card('{self.suit}', {self.value})"
     
-    def __eq__(self, other):
-        """Compare cards for equality."""
+    def __eq__(self, other) -> bool:
+        """
+        Compare two cards for equality.
+        
+        Args:
+            other: Another card to compare to
+            
+        Returns:
+            bool: True if the cards have the same suit and value
+        """
         if not isinstance(other, Card):
             return NotImplemented
         return self.suit == other.suit and self.value == other.value
@@ -71,56 +124,61 @@ class Card:
     
     def get_short_name(self):
         """Return short representation (e.g., 'AS' for Ace of Spades)."""
-        value_short = {14: "A", 13: "K", 12: "Q", 11: "J"}.get(self.value, str(self.value))
-        return f"{value_short}{self.suit}"
-
+        return f"{self.value_name}{self.suit}"
 
 class Deck:
-    """Representation of a deck of cards."""
+    """
+    Deck class representing a standard 52-card deck.
+    
+    Attributes:
+        cards: List of Card objects
+    """
     
     def __init__(self):
-        """Initialize a standard 52-card deck."""
+        """Initialize a new deck with 52 cards."""
         self.cards = []
         self.reset()
-        
+        logger.info("New deck initialized")
+    
     def reset(self):
-        """Reset the deck to a full set of 52 cards."""
+        """Reset the deck to a full 52-card deck."""
         self.cards = []
-        for suit in Card.SUITS:
-            for value in range(2, 15):  # 2 through 14 (Ace)
+        for suit in ['S', 'H', 'D', 'C']:
+            for value in range(2, 15):  # 2-14 (Ace is 14)
                 self.cards.append(Card(suit, value))
+        logger.info(f"Deck reset with {len(self.cards)} cards")
     
     def shuffle(self):
-        """Shuffle the cards in the deck using secure random."""
-        # Using Fisher-Yates shuffle algorithm via random.shuffle
+        """Shuffle the deck."""
         random.shuffle(self.cards)
+        logger.info("Deck shuffled")
     
-    def deal_card(self):
+    def deal_card(self) -> Optional[Card]:
         """
-        Deal one card from the deck.
+        Deal a card from the deck.
         
         Returns:
-            Card: A card object, or None if the deck is empty
+            Card: The top card from the deck, or None if deck is empty
         """
         if not self.cards:
+            logger.warning("Attempted to deal from an empty deck")
             return None
         
-        return self.cards.pop()
+        card = self.cards.pop()
+        return card
     
-    def count(self):
+    def __len__(self) -> int:
         """
-        Return the number of cards remaining in the deck.
+        Get the number of cards left in the deck.
         
         Returns:
-            int: Number of cards remaining
+            int: Number of cards
         """
         return len(self.cards)
     
-    def __str__(self):
-        """Return string representation of the deck."""
-        return f"Deck with {self.count()} cards"
-    
-    def __repr__(self):
-        """Return representation of the deck."""
-        return f"Deck({len(self.cards)} cards)"
+    def __str__(self) -> str:
+        """String representation of the deck."""
+        return f"Deck with {len(self.cards)} cards"
+
+# The duplicate Card and Deck classes have been removed
 
