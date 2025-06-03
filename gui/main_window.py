@@ -5,6 +5,7 @@ import time
 from core.game import BridgeGame
 from core.deck import Card
 from gui.bidding_box import BiddingBox
+from gui.player_setup import PlayerSetupDialog
 
 class CardView(tk.Label):
     SUITS = {'♠': 'black', '♥': 'red', '♦': 'red', '♣': 'black'}
@@ -100,6 +101,7 @@ class BridgeGameWindow(tk.Tk):
         # Initialize game state
         self.game = BridgeGame()
         self.card_views = [[], [], [], []]  # Card views for each player
+        self.player_types = {0: "human", 1: "ai", 2: "ai", 3: "ai"}  # Default player types
         self.trick_card_views = [None, None, None, None]  # Cards in current trick
         self.trick_frames = [None, None, None, None]  # Frames for trick cards
         self.ns_tricks = 0
@@ -120,11 +122,11 @@ class BridgeGameWindow(tk.Tk):
         # Get screen dimensions and set window size
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
-        window_width = 1400  # Increased width
-        window_height = 900  # Increased height
+        window_width = 1600  # Wider to accommodate side-by-side layout
+        window_height = 900  # Maintained height
         
         # Set minimum window size
-        self.minsize(1000, 700)
+        self.minsize(1200, 700)  # Increased minimum width
         
         # Center the window
         x = (screen_width - window_width) // 2
@@ -167,22 +169,34 @@ class BridgeGameWindow(tk.Tk):
         game_menu.add_command(label="Exit", command=self.quit)
 
     def _create_layout(self):
-        """Create the main layout."""
+        """Create the main layout with cards on left, bidding on right."""
         # Main frame
         self.main_frame = tk.Frame(self, bg='darkgreen')
         self.main_frame.pack(expand=True, fill='both', padx=20, pady=20)
-
-        # Create frames for each player with better styling
-        self.north_frame = tk.Frame(self.main_frame, bg='#004400', height=180, width=700)  # Increased sizes
-        self.south_frame = tk.Frame(self.main_frame, bg='#004400', height=180, width=700)
-        self.east_frame = tk.Frame(self.main_frame, bg='#004400', height=600, width=180)
-        self.west_frame = tk.Frame(self.main_frame, bg='#004400', height=600, width=180)
         
-        # Create central playing area
-        self.center_frame = tk.Frame(self.main_frame, bg='darkgreen', height=400, width=400)
+        # Create left and right container frames for split layout
+        self.left_container = tk.Frame(self.main_frame, bg='darkgreen', width=800)
+        self.right_container = tk.Frame(self.main_frame, bg='darkgreen', width=700)
         
-        # Create bidding box (initially hidden)
-        self.bidding_box = BiddingBox(self.main_frame, self.game, self._on_bidding_complete)
+        # Place left and right containers side by side
+        self.left_container.pack(side=tk.LEFT, fill='both', expand=True, padx=(0, 10))
+        self.right_container.pack(side=tk.RIGHT, fill='both', expand=True, padx=(10, 0))
+        
+        # Prevent containers from shrinking
+        self.left_container.pack_propagate(False)
+        self.right_container.pack_propagate(False)
+        
+        # Create frames for each player with better styling (in left container)
+        self.north_frame = tk.Frame(self.left_container, bg='#004400', height=160, width=1200)  # Wide for horizontal cards
+        self.south_frame = tk.Frame(self.left_container, bg='#004400', height=160, width=1200)  # Wide for horizontal cards
+        self.east_frame = tk.Frame(self.left_container, bg='#004400', height=800, width=150)    # Tall and narrow for vertical cards
+        self.west_frame = tk.Frame(self.left_container, bg='#004400', height=800, width=150)    # Tall and narrow for vertical cards
+        
+        # Create central playing area (in left container)
+        self.center_frame = tk.Frame(self.left_container, bg='darkgreen', height=300, width=400)
+        
+        # Create bidding box (in right container)
+        self.bidding_box = BiddingBox(self.right_container, self.game, self._on_bidding_complete, self.player_types)
         # Create frames for trick display in the center
         self.trick_area = tk.Frame(self.center_frame, bg='darkgreen', height=300, width=300)
         self.trick_area.pack(pady=20)
@@ -212,11 +226,17 @@ class BridgeGameWindow(tk.Tk):
         ]
         
         # Place frames using place geometry manager
-        self.north_frame.place(relx=0.5, rely=0, anchor='n')
-        self.south_frame.place(relx=0.5, rely=1, anchor='s')
-        self.east_frame.place(relx=1, rely=0.5, anchor='e')
-        self.west_frame.place(relx=0, rely=0.5, anchor='w')
+        # Position frames in a traditional bridge layout within the left container
+        self.north_frame.place(relx=0.5, rely=0.02, anchor='n')    # Moved up slightly
+        self.south_frame.place(relx=0.5, rely=0.98, anchor='s')    # Moved down slightly
+        self.east_frame.place(relx=0.98, rely=0.5, anchor='e')     # Moved more to the right
+        self.west_frame.place(relx=0.02, rely=0.5, anchor='w')     # Moved more to the left
         self.center_frame.place(relx=0.5, rely=0.5, anchor='center')
+        # Add a title for the cards area in the left container
+        cards_title = tk.Label(self.left_container, text="Playing Cards", 
+                             font=('Arial', 16, 'bold'),
+                             bg='darkgreen', fg='white')
+        cards_title.place(relx=0.5, rely=0.02, anchor='n')
 
         # Prevent frames from shrinking
         for frame in [self.north_frame, self.south_frame, self.east_frame, 
@@ -301,11 +321,11 @@ class BridgeGameWindow(tk.Tk):
                 
                 if current_suit is not None and suit != current_suit:
                     # Add a bit more space between suits
-                    spacer = tk.Label(frame, text=" ", bg='#004400', width=1)
+                    spacer = tk.Label(frame, text=" ", bg='#004400', width=2)  # Increased spacer width
                     if position in ['left', 'right']:
-                        spacer.pack()
+                        spacer.pack(side=tk.TOP)  # Vertical spacing for East/West
                     else:
-                        spacer.pack(side=tk.LEFT)
+                        spacer.pack(side=tk.LEFT)  # Horizontal spacing for North/South
                         
                 current_suit = suit
                 
@@ -315,10 +335,10 @@ class BridgeGameWindow(tk.Tk):
                 # Store the player index in the card view for later reference
                 card_view.player_idx = player_idx
                 
-                if position in ['left', 'right']:
-                    card_view.pack(pady=1)  # Stack vertically for East/West
-                else:
-                    card_view.pack(side=tk.LEFT, padx=1)  # Stack horizontally for North/South
+                if position in ['left', 'right']:  # East and West
+                    card_view.pack(side=tk.TOP, pady=4)  # Vertical stacking
+                else:  # North and South
+                    card_view.pack(side=tk.LEFT, padx=4)  # Horizontal arrangement
                 
                 # Store the card view for later reference
                 self.card_views[player_idx].append(card_view)
@@ -328,6 +348,16 @@ class BridgeGameWindow(tk.Tk):
 
     def _new_game(self):
         """Start a new game"""
+        # Show player setup dialog
+        setup_dialog = PlayerSetupDialog(self)
+        self.wait_window(setup_dialog)
+        
+        if setup_dialog.result:
+            self.player_types = setup_dialog.result
+        else:
+            # Default to South as human if dialog was cancelled
+            self.player_types = {0: "human", 1: "ai", 2: "ai", 3: "ai"}
+        
         # Initialize game and deal cards
         self.game = BridgeGame()
         self.game.new_game()  # This deals the cards
@@ -368,10 +398,10 @@ class BridgeGameWindow(tk.Tk):
         self.logger.info("Game state reset - trick counts zeroed")
         
         # Show all player frames for bidding
-        self.north_frame.place(relx=0.5, rely=0, anchor='n')
-        self.south_frame.place(relx=0.5, rely=1, anchor='s')
-        self.east_frame.place(relx=1, rely=0.5, anchor='e')
-        self.west_frame.place(relx=0, rely=0.5, anchor='w')
+        self.north_frame.place(relx=0.5, rely=0.02, anchor='n')
+        self.south_frame.place(relx=0.5, rely=0.98, anchor='s')
+        self.east_frame.place(relx=0.98, rely=0.5, anchor='e')
+        self.west_frame.place(relx=0.02, rely=0.5, anchor='w')
         self.center_frame.place(relx=0.5, rely=0.5, anchor='center')
         
         # Reset game state to ensure bidding
@@ -411,8 +441,15 @@ class BridgeGameWindow(tk.Tk):
         card = card_view.card
         player_idx = card_view.player_idx
         
+        # Log attempt
         self.logger.info(f"Card click: {self.POSITIONS[player_idx]} attempting to play {card}")
         
+        # Check if it's this player's turn
+        if player_idx != self.game.current_player:
+            self.status_bar.config(text=f"It's {self.POSITIONS[self.game.current_player]}'s turn to play")
+            self.logger.info(f"Wrong player: {self.POSITIONS[player_idx]} tried to play but it's {self.POSITIONS[self.game.current_player]}'s turn")
+            return
+            
         # Check if this is a new trick and enforce proper lead
         if not self.game.trick and self.game.last_trick_winner is not None:
             # If it's a new trick and not the first trick of the hand, only the winner can lead
@@ -424,32 +461,21 @@ class BridgeGameWindow(tk.Tk):
             else:
                 self.logger.info(f"Correct player leading: {self.POSITIONS[player_idx]} (trick winner)")
         
-        # If continuing a trick, check if it's this player's turn
-        if self.game.trick and player_idx != self.game.current_player:
-            self.logger.info(f"Wrong player: {self.POSITIONS[player_idx]} tried to play but it's {self.POSITIONS[self.game.current_player]}'s turn")
-            self.status_bar.config(text=f"It's {self.POSITIONS[self.game.current_player]}'s turn to play")
-            return
-        
-        # If trick already has cards, show what's being followed
+        # Check if player is following suit if required
         if self.game.trick:
             led_suit = self.game.trick[0]["card"].suit
-            self.logger.info(f"Current trick led with {led_suit}")
-            
-            # Check if player has cards of led suit
             player_hand = self.game.players[player_idx]["hand"]
             has_led_suit = any(c.suit == led_suit for c in player_hand)
-            if has_led_suit:
-                self.logger.info(f"{self.POSITIONS[player_idx]} has {led_suit} cards and must follow suit")
-            else:
-                self.logger.info(f"{self.POSITIONS[player_idx]} has no {led_suit} cards and can play anything")
-        
-        # We don't need to temporarily set the current player anymore since
-        # the game.play_card will check if this is a valid play
+            
+            if has_led_suit and card.suit != led_suit:
+                self.status_bar.config(text=f"Must follow suit ({led_suit})")
+                self.logger.info(f"{self.POSITIONS[player_idx]} must follow {led_suit} suit")
+                return
         
         # Try to play the card
         if self.game.play_card(player_idx, card):
             # Card played successfully
-            self.logger.info(f"Card played: {self.POSITIONS[player_idx]} played {card}")
+            self.logger.info(f"Card played successfully: {self.POSITIONS[player_idx]} played {card}")
             self._show_played_card(player_idx, card)
             
             # Remove card from display and refresh the player's hand
@@ -482,27 +508,9 @@ class BridgeGameWindow(tk.Tk):
                 self.logger.info(f"Next player: {self.POSITIONS[self.game.current_player]}")
                 self.status_bar.config(text=f"Next player: {self.POSITIONS[self.game.current_player]}")
         else:
-            # Invalid play - provide feedback based on the context
-            if not self.game.trick and self.game.last_trick_winner is not None and player_idx != self.game.last_trick_winner:
-                # Wrong player trying to lead
-                self.status_bar.config(text=f"{self.POSITIONS[self.game.last_trick_winner]} must lead to the next trick (as trick winner)")
-            elif self.game.trick and player_idx != self.game.current_player:
-                # Wrong player in the middle of a trick
-                self.status_bar.config(text=f"It's {self.POSITIONS[self.game.current_player]}'s turn to play")
-            
-            # Get the led suit for better feedback
-            led_suit = self.game.trick[0]["card"].suit if self.game.trick else None
-            
-            # Check if player has cards of the led suit
-            player_hand = self.game.players[player_idx]["hand"]
-            has_led_suit = any(c.suit == led_suit for c in player_hand) if led_suit else False
-            
-            # Provide more specific feedback
-            if has_led_suit:
-                self.status_bar.config(text=f"Invalid play from {self.POSITIONS[player_idx]}! Must follow {led_suit} suit.")
-            else:
-                # This case shouldn't happen with the fixed logic, but provide feedback just in case
-                self.status_bar.config(text=f"Invalid play from {self.POSITIONS[player_idx]}! Please try another card.")
+            # Card play failed
+            self.logger.warning(f"Invalid play: {self.POSITIONS[player_idx]} attempted to play {card}")
+            self.status_bar.config(text=f"Invalid play. Please try another card.")
     
     def _show_played_card(self, player_idx, card):
         """Display a card in the trick area"""
@@ -980,24 +988,44 @@ class BridgeGameWindow(tk.Tk):
         # Hide the bidding box
         self.bidding_box.hide()
         
-        # Update contract display
+        # Get contract and declarer info
         contract_str = self.game.determine_final_contract()
         self.contract_label.config(text=f"Contract: {contract_str}")
         
-        # Update status based on contract
+        # Set up the play phase
         if self.game.contract is None:
             self.status_bar.config(text="All players passed. Starting a new game.")
             # Could automatically start a new game here
         else:
+            # Determine first leader (player to left of declarer)
+            first_leader = (self.game.declarer + 1) % 4
             declarer_name = self.POSITIONS[self.game.declarer]
-            self.status_bar.config(text=f"Contract: {contract_str} by {declarer_name}. {self.POSITIONS[self.game.current_player]} to lead.")
-        
-        # Update hands for play phase - no need to redisplay since they're already shown
-        # Just update any visual indicators for play phase
-        self._highlight_current_player()
-        
-        # Make sure all cards are properly enabled/disabled for play phase
-        self._prepare_cards_for_play()
+            dummy_name = self.POSITIONS[(self.game.declarer + 2) % 4]
+            
+            # Set current player to first leader and clear any previous trick winner
+            self.game.current_player = first_leader
+            self.game.last_trick_winner = None  # Clear any previous trick winner
+            
+            # Log detailed information
+            self.logger.info(f"Contract: {contract_str}")
+            self.logger.info(f"Declarer: {declarer_name} (player {self.game.declarer})")
+            self.logger.info(f"Dummy: {dummy_name}")
+            self.logger.info(f"First Leader: {self.POSITIONS[first_leader]} (player {first_leader})")
+            
+            # Update UI with clear status message
+            status_text = (f"Contract: {contract_str} by {declarer_name}. "
+                          f"{dummy_name} is dummy. "
+                          f"{self.POSITIONS[first_leader]} to lead.")
+            self.status_bar.config(text=status_text)
+            
+            # Update UI to show current player
+            self._highlight_current_player()
+            
+            # Make sure all cards are properly enabled/disabled for play phase
+            self._prepare_cards_for_play()
+            
+            # Flash the leader's frame to make it clear who should play
+            self._flash_player_frame(first_leader)
     
     def _prepare_for_bidding(self):
         """Prepare the UI for the bidding phase."""
@@ -1007,10 +1035,10 @@ class BridgeGameWindow(tk.Tk):
         self.game.current_state = "bidding"
         
         # Make sure all frames are visible
-        self.north_frame.place(relx=0.5, rely=0, anchor='n')
-        self.south_frame.place(relx=0.5, rely=1, anchor='s')
-        self.east_frame.place(relx=1, rely=0.5, anchor='e')
-        self.west_frame.place(relx=0, rely=0.5, anchor='w')
+        self.north_frame.place(relx=0.5, rely=0.02, anchor='n')
+        self.south_frame.place(relx=0.5, rely=0.98, anchor='s')
+        self.east_frame.place(relx=0.98, rely=0.5, anchor='e')
+        self.west_frame.place(relx=0.02, rely=0.5, anchor='w')
         self.center_frame.place(relx=0.5, rely=0.5, anchor='center')
         
         # Make sure we have valid hands
@@ -1048,9 +1076,7 @@ class BridgeGameWindow(tk.Tk):
         # Update status
         self.status_bar.config(text="Bidding phase - make your bid")
         
-        # Start AI bidding if it's their turn
-        if self.game.current_bidder != 0:
-            self.after(1000, self.bidding_box.schedule_ai_bid)
+        # All players are human-controlled, so no AI bidding is needed
     
     def _display_all_hands_for_bidding(self):
         """Display all hands face-up for the bidding phase."""
@@ -1102,10 +1128,10 @@ class BridgeGameWindow(tk.Tk):
         self.card_views = [[] for _ in range(4)]
         
         # Make sure frames are properly positioned
-        self.north_frame.place(relx=0.5, rely=0, anchor='n')
-        self.south_frame.place(relx=0.5, rely=1, anchor='s')
-        self.east_frame.place(relx=1, rely=0.5, anchor='e')
-        self.west_frame.place(relx=0, rely=0.5, anchor='w')
+        self.north_frame.place(relx=0.5, rely=0.1, anchor='n')
+        self.south_frame.place(relx=0.5, rely=0.9, anchor='s')
+        self.east_frame.place(relx=0.8, rely=0.5, anchor='e')
+        self.west_frame.place(relx=0.2, rely=0.5, anchor='w')
         
         # Clear existing content in frames
         for frame in [self.north_frame, self.south_frame, self.east_frame, self.west_frame]:
@@ -1214,10 +1240,10 @@ class BridgeGameWindow(tk.Tk):
                 
                 # For East/West, stack suits vertically
                 # For North/South, arrange suits horizontally
-                if position in ['left', 'right']:
-                    suit_frame.pack(side=tk.TOP, fill=tk.X, padx=3, pady=3)
-                else:
-                    suit_frame.pack(side=tk.LEFT, fill=tk.Y, padx=3, pady=3)
+                if position in ['left', 'right']:  # East and West
+                    suit_frame.pack(side=tk.TOP, fill=tk.X, padx=5, pady=8)  # Stack suit frames vertically
+                else:  # North and South
+                    suit_frame.pack(side=tk.LEFT, fill=tk.Y, padx=8, pady=5)  # Arrange suit frames horizontally
                 
                 # Add suit label
                 suit_label = tk.Label(suit_frame, 
@@ -1232,39 +1258,65 @@ class BridgeGameWindow(tk.Tk):
             for card in hand:
                 suit = card.suit
                 
-                # Create card view with appropriate colors and style
-                card_button = tk.Button(suit_frames[suit], 
-                                     text=card.value_name, 
-                                     font=('Arial', 12, 'bold'),
-                                     fg='white' if suit in ['S', 'C'] else '#FFCCCC',  # Lighter color for better visibility
-                                     bg='#001122' if suit in ['S', 'C'] else '#330000',
-                                     width=2, height=1,
-                                     relief=tk.RAISED,
-                                     borderwidth=2)
+                # Create CardView instead of Button for consistent handling
+                card_view = CardView(suit_frames[suit], 
+                                   card=card,
+                                   face_up=True,
+                                   callback=self._on_card_click)
                 
-                # For East/West, stack cards horizontally within each suit
-                # For North/South, arrange cards vertically within each suit
-                if position in ['left', 'right']:
-                    card_button.pack(side=tk.LEFT, padx=2, pady=2)
-                else:
-                    card_button.pack(side=tk.TOP, padx=2, pady=2)
+                # Store player index in card view
+                card_view.player_idx = player_idx
+                
+                # For East/West, stack cards vertically within each suit
+                # For North/South, arrange cards horizontally within each suit
+                if position in ['left', 'right']:  # East and West
+                    # Stack cards vertically
+                    card_view.pack(side=tk.TOP, pady=4)  # Increased vertical spacing
+                else:  # North and South
+                    # Arrange cards horizontally
+                    card_view.pack(side=tk.LEFT, padx=4, pady=2)  # Increased horizontal spacing
                 
                 # Store the card view for later reference
-                self.card_views[player_idx].append(card_button)
+                self.card_views[player_idx].append(card_view)
     
     def _prepare_cards_for_play(self):
-        """Prepare cards for the playing phase by enabling/disabling appropriate cards."""
-        # Enable only current player's cards
+        """Prepare cards for the playing phase."""
+        # Get first leader (player to left of declarer)
+        first_leader = (self.game.declarer + 1) % 4
+        
+        # Set the game's current player to the first leader
+        self.game.current_player = first_leader
+        
+        self.logger.info(f"Setting up play phase - First leader: {self.POSITIONS[first_leader]}")
+        
+        # Enable/disable cards based on first leader
         for player_idx, card_views in enumerate(self.card_views):
             for card_view in card_views:
-                # We need to rebind the click handler for the playing phase
-                if player_idx == 0:  # South (human player)
-                    card_view.bind("<Button-1>", lambda event, cv=card_view: self._on_card_click(cv))
-                    card_view.config(cursor="hand2")
+                if player_idx == first_leader:
+                    # Enable clicking for first leader's cards
+                    card_view.callback = self._on_card_click  # Set callback first
+                    card_view.bind("<Button-1>", lambda e, cv=card_view: self._on_card_click(cv))
+                    card_view.config(cursor="hand2", bg='white')
+                    self.logger.info(f"Enabled card {card_view.card} for {self.POSITIONS[player_idx]}")
                 else:
-                    # Disable AI cards for clicking
+                    # Disable clicking for other players' cards
+                    card_view.callback = None
                     card_view.unbind("<Button-1>")
-                    card_view.config(cursor="")
+                    card_view.config(cursor="", bg='#f0f0f0')  # Gray out cards
+                    self.logger.info(f"Disabled card {card_view.card} for {self.POSITIONS[player_idx]}")
+        
+        # Update UI
+        self._highlight_current_player()
+        
+        # Set status text
+        status_text = f"{self.POSITIONS[first_leader]} to lead"
+        self.status_bar.config(text=status_text)
+        
+        # Flash the leader's frame to make it clear who should play
+        self._flash_player_frame(first_leader)
+        
+        # Log completion
+        self.logger.info(f"Play phase setup complete - {self.POSITIONS[first_leader]} to lead")
     
     def _hide_play_area(self):
         """Hide the play area during bidding - NOT USED, we keep cards visible during bidding."""
@@ -1346,9 +1398,9 @@ class BridgeGameWindow(tk.Tk):
                 # Add a bit more space between suits
                 spacer = tk.Label(cards_frame, text=" ", bg='#004400', width=1)
                 if position in ['left', 'right']:
-                    spacer.pack()
+                    spacer.pack(side=tk.TOP)  # Vertical spacing for East/West
                 else:
-                    spacer.pack(side=tk.LEFT)
+                    spacer.pack(side=tk.LEFT)  # Horizontal spacing for North/South
                     
             current_suit = suit
             
@@ -1358,10 +1410,10 @@ class BridgeGameWindow(tk.Tk):
             # Store the player index in the card view
             card_view.player_idx = player_idx
             
-            if position in ['left', 'right']:
-                card_view.pack(pady=1)  # Stack vertically for East/West
-            else:
-                card_view.pack(side=tk.LEFT, padx=1)  # Stack horizontally for North/South
+            if position in ['left', 'right']:  # East and West
+                card_view.pack(side=tk.TOP, pady=4)  # Match the spacing from bidding display
+            else:  # North and South
+                card_view.pack(side=tk.LEFT, padx=4)  # Match the spacing from bidding display
             
             # Store the card view for later reference
             self.card_views[player_idx].append(card_view)

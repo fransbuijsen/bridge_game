@@ -20,7 +20,7 @@ class BiddingBox(tk.Frame):
     # Set up logger
     logger = logging.getLogger("BridgeGame.GUI.BiddingBox")
     
-    def __init__(self, parent, game, on_bidding_complete):
+    def __init__(self, parent, game, on_bidding_complete, player_types):
         """
         Initialize the BiddingBox.
         
@@ -28,16 +28,14 @@ class BiddingBox(tk.Frame):
             parent: The parent widget
             game: The BridgeGame instance
             on_bidding_complete: Callback function when bidding is complete
+            player_types: Dictionary mapping player indices to their types (human/ai)
         """
         super().__init__(parent, bg='darkgreen')
         
         self.parent = parent
         self.game = game
         self.on_bidding_complete = on_bidding_complete
-        
-        # Bidding state
-        self.ai_thinking = False
-        self.ai_bid_job = None
+        self.player_types = player_types  # Store player types directly in the bidding box
         
         # Create UI components
         self._create_layout()
@@ -47,7 +45,7 @@ class BiddingBox(tk.Frame):
     def _create_layout(self):
         """Create the main layout for the bidding box."""
         # Main container with title
-        title_label = tk.Label(self, text="Bidding Phase", 
+        title_label = tk.Label(self, text="Bidding", 
                               font=('Arial', 16, 'bold'),
                               bg='darkgreen', fg='white')
         title_label.pack(pady=(10, 20))
@@ -56,9 +54,9 @@ class BiddingBox(tk.Frame):
         content_frame = tk.Frame(self, bg='darkgreen')
         content_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
         
-        # Left column - bidding controls
+        # Bidding controls frame - now stacked vertically
         self.bid_frame = tk.Frame(content_frame, bg='darkgreen')
-        self.bid_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.bid_frame.pack(fill=tk.X, expand=True)  # Changed to fill X
         
         # Current bidder indicator
         self.bidder_frame = tk.Frame(self.bid_frame, bg='darkgreen')
@@ -78,16 +76,16 @@ class BiddingBox(tk.Frame):
         # Create special bid buttons
         self._create_special_bid_buttons()
         
-        # Right column - bidding history
+        # History frame - now below the bidding frame
         history_frame = tk.Frame(content_frame, bg='#004400', bd=2, relief=tk.GROOVE)
-        history_frame.pack(side=tk.RIGHT, fill=tk.BOTH, padx=(20, 0))
+        history_frame.pack(fill=tk.X, pady=(20, 0))  # Changed to fill X with top padding
         
         # History title
         tk.Label(history_frame, text="Bidding History", 
                 font=('Arial', 14), bg='#004400', fg='white').pack(pady=10)
         
-        # Bidding history display
-        self.history_text = tk.Text(history_frame, width=30, height=20, 
+        # Bidding history display - adjusted height for new layout
+        self.history_text = tk.Text(history_frame, height=10,  # Reduced height
                                    font=('Courier', 12), bg='#002200', fg='white')
         self.history_text.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
         
@@ -164,7 +162,7 @@ class BiddingBox(tk.Frame):
     
     def show(self):
         """Show the bidding box and start the bidding phase."""
-        self.pack(fill=tk.BOTH, expand=True)
+        self.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
         # Reset bidding history
         self.clear_history()
@@ -174,18 +172,9 @@ class BiddingBox(tk.Frame):
         
         # Update button states
         self.update_button_states()
-        
-        # Start AI bidding if it's an AI's turn
-        if self.game.current_bidder != 0:  # Not the human player (South)
-            self.schedule_ai_bid()
     
     def hide(self):
         """Hide the bidding box."""
-        # Cancel any pending AI bid
-        if self.ai_bid_job:
-            self.after_cancel(self.ai_bid_job)
-            self.ai_bid_job = None
-        
         self.pack_forget()
     
     def clear_history(self):
@@ -267,16 +256,13 @@ class BiddingBox(tk.Frame):
         player_name = self.POSITIONS[current_bidder_idx]
         
         self.current_bidder_label.config(text=player_name)
-        
-        # Highlight differently for human vs AI
-        if current_bidder_idx == 0:  # Human player (South)
-            self.current_bidder_label.config(fg='yellow')
-        else:  # AI player
-            self.current_bidder_label.config(fg='#AAAAFF')  # Light blue
+        # All players are human, so always use yellow
+        self.current_bidder_label.config(fg='yellow')
     
     def update_button_states(self):
         """Enable/disable buttons based on valid bids."""
         valid_bids = self.game.get_valid_bids()
+        current_player = self.game.current_bidder
         
         # First disable all buttons
         for button in self.bid_buttons.values():
@@ -286,11 +272,7 @@ class BiddingBox(tk.Frame):
         self.double_button.config(state=tk.DISABLED)
         self.redouble_button.config(state=tk.DISABLED)
         
-        # If it's not human player's turn, disable all buttons
-        if self.game.current_bidder != 0:
-            return
-        
-        # Enable valid bid buttons
+        # Enable valid bid buttons for current player (all players are human)
         for bid in valid_bids:
             if bid.bid_type == BidType.PASS:
                 self.pass_button.config(state=tk.NORMAL)
@@ -305,15 +287,13 @@ class BiddingBox(tk.Frame):
     
     def _on_bid_click(self, level, denomination):
         """Handle a click on a normal bid button."""
-        if self.game.current_bidder != 0 or self.ai_thinking:
-            # Not human player's turn or AI is thinking
-            return
+        current_bidder = self.game.current_bidder
         
         self.logger.info(f"Bid button clicked: {level}{denomination}")
         
         # Create a bid and place it
         bid = Bid(BidType.NORMAL, level, denomination)
-        success = self.game.place_bid(0, bid)
+        success = self.game.place_bid(current_bidder, bid)
         
         if success:
             self.logger.info(f"Bid placed: {bid}")
@@ -327,22 +307,17 @@ class BiddingBox(tk.Frame):
             if self.game.current_state == "playing":
                 self.logger.info("Bidding complete")
                 self.on_bidding_complete()
-            else:
-                # Schedule AI bid
-                self.schedule_ai_bid()
         else:
             self.logger.warning(f"Invalid bid: {bid}")
     
     def _on_special_bid_click(self, bid_type):
         """Handle a click on a special bid button (Pass, Double, Redouble)."""
-        if self.game.current_bidder != 0 or self.ai_thinking:
-            # Not human player's turn or AI is thinking
-            return
+        current_bidder = self.game.current_bidder
         
         self.logger.info(f"Special bid button clicked: {bid_type}")
         
         # Place the bid
-        success = self.game.place_bid(0, bid_type)
+        success = self.game.place_bid(current_bidder, bid_type)
         
         if success:
             self.logger.info(f"Special bid placed: {bid_type}")
@@ -356,287 +331,8 @@ class BiddingBox(tk.Frame):
             if self.game.current_state == "playing":
                 self.logger.info("Bidding complete")
                 self.on_bidding_complete()
-            else:
-                # Schedule AI bid
-                self.schedule_ai_bid()
         else:
             self.logger.warning(f"Invalid special bid: {bid_type}")
     
-    def schedule_ai_bid(self):
-        """Schedule an AI bid after a short delay."""
-        if self.game.current_bidder == 0 or self.ai_thinking:
-            # Human player's turn or AI is already thinking
-            return
-        
-        self.ai_thinking = True
-        
-        # Show thinking indicator
-        current_bidder_idx = self.game.current_bidder
-        player_name = self.POSITIONS[current_bidder_idx]
-        self.current_bidder_label.config(text=f"{player_name} (thinking...)")
-        
-        # Schedule AI bid after delay (simulate thinking)
-        delay = 1000  # 1 second
-        self.ai_bid_job = self.after(delay, self.make_ai_bid)
-    
-    def make_ai_bid(self):
-        """Make a bid for the current AI player."""
-        current_bidder = self.game.current_bidder
-        position = self.POSITIONS[current_bidder]
-        self.ai_thinking = True
-        
-        try:
-            # Skip if human player
-            if current_bidder == 0:  # Human player
-                self.ai_thinking = False
-                return
-                
-            self.logger.info(f"AI player {position} is making a bid")
-            
-            # Import the hand evaluation module
-            from core.hand_evaluation import (
-                calculate_hcp, 
-                count_suit_length, 
-                is_balanced,
-                evaluate_distribution_points,
-                determine_opening_bid,
-                determine_response,
-                determine_competitive_bid
-            )
-            
-            # Get AI's hand with improved error handling
-            try:
-                # Direct access to player dictionary
-                player = self.game.players[current_bidder]
-                
-                # Debug log of player data structure
-                self.logger.info(f"Player type: {type(player)}")
-                self.logger.info(f"Player data: {player}")
-                
-                # Access hand directly
-                hand = player["hand"]
-                
-                if not hand:
-                    self.logger.error(f"Empty hand for {position}")
-                    self.logger.info(f"Player data: {player}")
-                    raise ValueError(f"Empty hand list for {position}")
-                
-                # Log found cards for verification
-                self.logger.info(f"Successfully found {len(hand)} cards for {position}")
-                
-                # Additional debug - print first few cards
-                card_sample = ', '.join(str(card) for card in hand[:3]) + "..." if hand else "None"
-                self.logger.info(f"Card sample: {card_sample}")
-            except KeyError as ke:
-                self.logger.error(f"KeyError accessing hand: {ke}")
-                self.logger.error(f"Game players structure: {self.game.players}")
-                raise ValueError(f"Cannot access hand for {position}: {ke}")
-            except Exception as e:
-                self.logger.error(f"Error accessing hand: {e}")
-                raise ValueError(f"Hand access error for {position}: {e}")
-            
-            # Evaluate hand
-            hcp = calculate_hcp(hand)
-            suit_lengths = count_suit_length(hand)
-            balanced = is_balanced(suit_lengths)
-            dist_points = evaluate_distribution_points(suit_lengths)
-            total_points = hcp + dist_points
-            
-            # Log hand details for debugging
-            sorted_hand = sorted(hand, key=lambda c: (c.suit, -c.value))
-            card_str = ", ".join(f"{card.value_name}{card.suit}" for card in sorted_hand)
-            dist_str = f"♠{suit_lengths['S']} ♥{suit_lengths['H']} ♦{suit_lengths['D']} ♣{suit_lengths['C']}"
-            pattern = "-".join(str(count) for count in sorted(suit_lengths.values(), reverse=True))
-            
-            self.logger.info(f"AI {position} cards: {card_str}")
-            self.logger.info(f"HCP: {hcp}, Total points: {total_points}, Distribution: {dist_str}, Pattern: {pattern}, Balanced: {balanced}")
-            
-            # Get valid bids
-            valid_bids = self.game.get_valid_bids()
-            valid_bid_strs = [str(bid) for bid in valid_bids]
-            self.logger.info(f"Valid bids: {', '.join(valid_bid_strs)}")
-            
-            # Analyze bidding context
-            partner_idx = (current_bidder + 2) % 4  # Partner sits across
-            partner_bid = "Pass"
-            right_opponent_bid = "Pass"
-            left_opponent_bid = "Pass"
-            
-            # Extract previous bids
-            recent_bids = []
-            for entry in reversed(self.game.bidding_history):
-                player_idx = entry["player"]
-                bid_str = str(entry["bid"])
-                position_name = self.POSITIONS[player_idx]
-                recent_bids.append(f"{position_name}: {bid_str}")
-                
-                if player_idx == partner_idx and partner_bid == "Pass":
-                    partner_bid = bid_str
-                elif player_idx == (current_bidder + 1) % 4 and right_opponent_bid == "Pass":
-                    right_opponent_bid = bid_str
-                elif player_idx == (current_bidder + 3) % 4 and left_opponent_bid == "Pass":
-                    left_opponent_bid = bid_str
-            
-            # Determine the auction type
-            opening_auction = all(
-                isinstance(entry["bid"], Bid) and entry["bid"].bid_type == BidType.PASS 
-                for entry in self.game.bidding_history
-            )
-            
-            if recent_bids:
-                self.logger.info(f"Recent bids (newest first): {', '.join(recent_bids[:4])}")
-            self.logger.info(f"Bidding context - Opening: {opening_auction}, Partner: {partner_bid}, Opponents: {left_opponent_bid}/{right_opponent_bid}")
-            
-            # Make bidding decision based on hand evaluation and auction context
-            bid_str = "Pass"  # Default to Pass
-            explanation = "Default pass"
-            
-            if opening_auction:
-                # This is an opening bid
-                bid_str, explanation = determine_opening_bid(hand)
-                self.logger.info(f"Opening decision: {bid_str} ({explanation})")
-                
-                # Enhanced opening logic for borderline hands
-                if bid_str == "Pass" and total_points >= 11:
-                    # Light opening with shape
-                    if suit_lengths['S'] >= 5:
-                        bid_str = "1S"
-                        explanation = f"Light opening with {hcp} HCP + {dist_points} distribution points and 5+ spades"
-                    elif suit_lengths['H'] >= 5:
-                        bid_str = "1H"
-                        explanation = f"Light opening with {hcp} HCP + {dist_points} distribution points and 5+ hearts"
-            
-            elif partner_bid != "Pass" and partner_bid not in ["Double", "Redouble"]:
-                # Responding to partner's bid
-                bid_str, explanation = determine_response(hand, partner_bid, right_opponent_bid)
-                self.logger.info(f"Response decision: {bid_str} ({explanation})")
-                
-                # Enhanced response logic for borderline hands
-                if bid_str == "Pass" and hcp >= 6:
-                    if partner_bid[1] in "SH" and suit_lengths[partner_bid[1]] >= 3:
-                        # Support partner's major with 3+ cards
-                        bid_str = f"2{partner_bid[1]}"
-                        explanation = f"Support with {hcp} HCP and {suit_lengths[partner_bid[1]]} cards"
-                    elif partner_bid[0] == "1" and balanced and 6 <= hcp <= 10:
-                        # Standard 1NT response with balanced hand
-                        bid_str = "1NT"
-                        explanation = f"Balanced hand with {hcp} HCP"
-            
-            elif left_opponent_bid != "Pass" or right_opponent_bid != "Pass":
-                # Competitive auction
-                opponent_bid = right_opponent_bid if right_opponent_bid != "Pass" else left_opponent_bid
-                bid_str, explanation = determine_competitive_bid(hand, partner_bid, opponent_bid)
-                self.logger.info(f"Competitive decision: {bid_str} ({explanation})")
-                
-                # Enhanced competitive logic
-                if bid_str == "Pass" and hcp >= 8:
-                    # Consider overcalling with good suit
-                    for suit in "SHDC":
-                        if suit_lengths[suit] >= 5 and opponent_bid[0] == "1":
-                            bid_str = f"1{suit}" if suit in "SH" and opponent_bid[1] not in suit else f"2{suit}"
-                            explanation = f"Competitive overcall with {hcp} HCP and 5+ {suit}"
-                            break
-            
-            else:
-                # Default to Pass if no context matches
-                bid_str = "Pass"
-                explanation = "No appropriate context"
-            
-            # Validate that the bid is actually allowed
-            if bid_str != "Pass" and bid_str not in valid_bid_strs:
-                self.logger.warning(f"Selected bid {bid_str} not valid in current auction")
-                bid_str = "Pass"  # Default to Pass if invalid
-                explanation += " (defaulted to Pass - invalid bid)"
-            
-            self.logger.info(f"FINAL DECISION: {bid_str} - {explanation}")
-            
-            # Find the corresponding Bid object
-            selected_bid = None
-            for bid in valid_bids:
-                if str(bid) == bid_str:
-                    selected_bid = bid
-                    break
-            
-            # Default to Pass if no matching bid found
-            if not selected_bid:
-                for bid in valid_bids:
-                    if bid.bid_type == BidType.PASS:
-                        selected_bid = bid
-                        break
-            
-            # Place the bid
-            if selected_bid:
-                success = self.game.place_bid(current_bidder, selected_bid)
-                
-                if success:
-                    self.logger.info(f"AI bid placed: {selected_bid} - {explanation}")
-                    
-                    # Update UI
-                    self.update_history()
-                    self.update_current_bidder()
-                    self.update_button_states()
-                    
-                    # Check if bidding is complete
-                    if self.game.current_state == "playing":
-                        self.logger.info("Bidding complete")
-                        self.on_bidding_complete()
-                    else:
-                        # Schedule next AI bid if needed
-                        self.ai_thinking = False
-                        if self.game.current_bidder != 0:
-                            self.schedule_ai_bid()
-                else:
-                    self.logger.error(f"AI bid failed: {selected_bid}")
-                    self._emergency_pass(current_bidder)
-            else:
-                self.logger.error("No valid bid found for AI")
-                self._emergency_pass(current_bidder)
-                
-        except Exception as e:
-            self.logger.error(f"Error in AI bidding: {e}")
-            import traceback
-            self.logger.error(traceback.format_exc())
-            self._emergency_pass(current_bidder)
-        
-        finally:
-            self.ai_thinking = False
-            self.ai_bid_job = None
-    
-    def _emergency_pass(self, player_idx):
-        """Emergency fallback to place a Pass bid when normal bidding fails."""
-        try:
-            self.logger.info(f"Emergency Pass for player {self.POSITIONS[player_idx]}")
-            
-            # Find Pass bid
-            pass_bid = None
-            for bid in self.game.get_valid_bids():
-                if bid.bid_type == BidType.PASS:
-                    pass_bid = bid
-                    break
-            
-            if pass_bid:
-                success = self.game.place_bid(player_idx, pass_bid)
-                if success:
-                    self.logger.info("Emergency Pass bid placed successfully")
-                    self.update_history()
-                    self.update_current_bidder()
-                    self.update_button_states()
-                    
-                    # Check if bidding is complete
-                    if self.game.current_state == "playing":
-                        self.ai_thinking = False
-                        self.on_bidding_complete()
-                    else:
-                        # If it's another AI's turn, schedule next AI bid
-                        self.ai_thinking = False
-                        if self.game.current_bidder != 0:
-                            self.schedule_ai_bid()
-                else:
-                    self.logger.error("Emergency Pass bid failed")
-            else:
-                self.logger.error("Could not find Pass bid in valid bids")
-        except Exception as e:
-            self.logger.error(f"Emergency Pass recovery failed: {e}")
-            import traceback
-            self.logger.error(traceback.format_exc())
+    # AI bidding methods removed for human-only play
 
